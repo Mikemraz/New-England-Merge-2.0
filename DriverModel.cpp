@@ -14,7 +14,7 @@
 #include <algorithm>
 using namespace std;
 /*==========================================================================*/
-long meter_link = 21;
+long meter_link [] = {21,22,30,52,53,61,83,84,92};
 long current_link = 0;
 long current_lane = 0;
 long vehicle_id = 111;
@@ -35,26 +35,39 @@ double current_speed_of_lead_vehicle = 0.0;
 double distance_to_nveh_0_1 = 999.0;
 double distance_to_nveh_l1_1 = 999.0;
 double distance_to_nveh_r1_1 = 999.0;
+double distance_to_nveh_l2_1 = 999.0;
+double distance_to_nveh_r2_1 = 999.0;
 
 double net_distance_to_nveh_0_1 = 999.0;
 double net_distance_to_nveh_l1_1 = 999.0;
 double net_distance_to_nveh_r1_1 = 999.0;
+double net_distance_to_nveh_l2_1 = 999.0;
+double net_distance_to_nveh_r2_1 = 999.0;
 
 double speed_difference_to_nveh_0_1 = 0.0;
 double speed_difference_to_nveh_l1_1 = 0.0;
 double speed_difference_to_nveh_r1_1 = 0.0;
+double speed_difference_to_nveh_l2_1 = 0.0;
+double speed_difference_to_nveh_r2_1 = 0.0;
 
 double speed_of_nveh_0_1 = 0.0;
 double speed_of_nveh_l1_1 = 0.0;
 double speed_of_nveh_r1_1 = 0.0;
+double speed_of_nveh_l2_1 = 0.0;
+double speed_of_nveh_r2_1 = 0.0;
+
 
 double acc_of_nveh_0_1 = 0.0;
 double acc_of_nveh_l1_1 = 0.0;
 double acc_of_nveh_r1_1 = 0.0;
+double acc_of_nveh_l2_1 = 0.0;
+double acc_of_nveh_r2_1 = 0.0;
 
 double length_of_nveh_0_1 = 0.0;
 double length_of_nveh_l1_1 = 0.0;
 double length_of_nveh_r1_1 = 0.0;
+double length_of_nveh_l2_1 = 0.0;
+double length_of_nveh_r2_1 = 0.0;
 
 
 long intac_state = 0;
@@ -84,7 +97,8 @@ long determine_lead_vehicle_for_GCACC();
 void set_parameters_for_lead_vehicle();
 void set_net_gap_to_nveh();
 void set_nveh_speed();
-
+bool is_now_in_meter_zone();
+double find_min_net_distance();
 ofstream myfile("traffic_state.txt", std::fstream::trunc);
 /*==========================================================================*/
 
@@ -186,13 +200,25 @@ DRIVERMODEL_API  int  DriverModelSetValue(long   type,
 			return 1;
 		}
 		if ((index1 == -1)&(index2 == 1)) {
+			//the nveh on the left side of subject vehicle
 			distance_to_nveh_l1_1 = double_value;
 			distance_to_nveh_l1_1 = ResetDistanceToLeadCar(distance_to_nveh_l1_1);
 			return 1;
 		}
 		if ((index1 == 1)&(index2 == 1)) {
+			//the nveh on the right side of subject vehicle
 			distance_to_nveh_r1_1 = double_value;
 			distance_to_nveh_r1_1 = ResetDistanceToLeadCar(distance_to_nveh_r1_1);
+			return 1;
+		}
+		if ((index1 ==-2)&(index2 == 1)) {
+			distance_to_nveh_l2_1 = double_value;
+			distance_to_nveh_l2_1 = ResetDistanceToLeadCar(distance_to_nveh_l2_1);
+			return 1;
+		}
+		if ((index1 == 2)&(index2 == 1)) {
+			distance_to_nveh_r2_1 = double_value;
+			distance_to_nveh_r2_1 = ResetDistanceToLeadCar(distance_to_nveh_r2_1);
 			return 1;
 		}
 	}
@@ -211,8 +237,14 @@ DRIVERMODEL_API  int  DriverModelSetValue(long   type,
 			speed_difference_to_nveh_r1_1 = double_value;
 			return 1;
 		}
-
-
+		if ((index1 == -2)&(index2 == 1)) {
+			speed_difference_to_nveh_l2_1 = double_value;
+			return 1;
+		}
+		if ((index1 == 2)&(index2 == 1)) {
+			speed_difference_to_nveh_r2_1 = double_value;
+			return 1;
+		}
 
 	}
 
@@ -230,6 +262,15 @@ DRIVERMODEL_API  int  DriverModelSetValue(long   type,
 			acc_of_nveh_r1_1 = double_value;
 			return 1;
 		}
+		if ((index1 == -2)&(index2 == 1)) {
+			acc_of_nveh_l2_1 = double_value;
+			return 1;
+		}
+		if ((index1 == 2)&(index2 == 1)) {
+			acc_of_nveh_r2_1 = double_value;
+			return 1;
+		}
+
 	}
 	case DRIVER_DATA_NVEH_LENGTH: {
 		//improve: get info of more downstream vehicles
@@ -243,6 +284,14 @@ DRIVERMODEL_API  int  DriverModelSetValue(long   type,
 		}
 		if ((index1 == 1)&(index2 == 1)) {
 			length_of_nveh_r1_1 = double_value;
+			return 1;
+		}
+		if ((index1 == -2)&(index2 == 1)) {
+			length_of_nveh_l2_1 = double_value;
+			return 1;
+		}
+		if ((index1 == 2)&(index2 == 1)) {
+			length_of_nveh_r2_1 = double_value;
 			return 1;
 		}
 
@@ -437,7 +486,7 @@ double ResetDistanceToLeadCar(double distance) {
 
 double GetReferenceDistance() {
 	double reference_distance_local = 0.0;
-	reference_distance_local = std::max(2.0, headway_for_CACC * current_speed);
+	reference_distance_local = std::max(4.0, headway_for_CACC * current_speed);
 	return reference_distance_local;
 }
 
@@ -456,7 +505,7 @@ double GetAccOfEmergencybrake() {
 
 bool UseInternalModel() {
 	// if current_link is not in meter_link, then use internal model. 
-	if (current_link == meter_link) {
+	if (is_now_in_meter_zone()) {
 		return false;
 	}
 	else {
@@ -465,9 +514,8 @@ bool UseInternalModel() {
 }
 
 long determine_lead_vehicle_for_GCACC() {
-	double smallest = std::min(net_distance_to_nveh_0_1, net_distance_to_nveh_l1_1);
+	double smallest = find_min_net_distance();
 	long output = 0;
-	smallest = std::min(smallest, net_distance_to_nveh_r1_1);
 	if (smallest == net_distance_to_nveh_0_1) {
 		output = 0;
 	}
@@ -477,6 +525,14 @@ long determine_lead_vehicle_for_GCACC() {
 	if (smallest == net_distance_to_nveh_r1_1) {
 		output = 2;
 	}
+	if (smallest == net_distance_to_nveh_l2_1) {
+		output = 3;
+	}
+	if (smallest == net_distance_to_nveh_r2_1) {
+		output = 4;
+	}
+
+
 	return output;
 }
 
@@ -497,18 +553,50 @@ void set_parameters_for_lead_vehicle() {
 		net_distance_to_lead_vehicle = net_distance_to_nveh_r1_1;
 		current_speed_of_lead_vehicle = speed_of_nveh_r1_1;
 	}
+	if (flag == 3) {
+		acc_of_lead_vehicle = acc_of_nveh_l2_1;
+		net_distance_to_lead_vehicle = net_distance_to_nveh_l2_1;
+		current_speed_of_lead_vehicle = speed_of_nveh_l2_1;
+	}
+	if (flag == 4) {
+		acc_of_lead_vehicle = acc_of_nveh_r2_1;
+		net_distance_to_lead_vehicle = net_distance_to_nveh_r2_1;
+		current_speed_of_lead_vehicle = speed_of_nveh_r2_1;
+	}
 }
 
 void set_net_gap_to_nveh() {
 	net_distance_to_nveh_0_1 = distance_to_nveh_0_1 - length_of_nveh_0_1;
 	net_distance_to_nveh_l1_1 = distance_to_nveh_l1_1 - length_of_nveh_l1_1;
 	net_distance_to_nveh_r1_1 = distance_to_nveh_r1_1 - length_of_nveh_r1_1;
+	net_distance_to_nveh_l2_1 = distance_to_nveh_l2_1 - length_of_nveh_l2_1;
+	net_distance_to_nveh_r2_1 = distance_to_nveh_r2_1 - length_of_nveh_r2_1;
 }
 
 void set_nveh_speed() {
 	speed_of_nveh_0_1 = current_speed - speed_difference_to_nveh_0_1;
 	speed_of_nveh_l1_1 = current_speed - speed_difference_to_nveh_l1_1;
 	speed_of_nveh_r1_1 = current_speed - speed_difference_to_nveh_r1_1;
+	speed_of_nveh_l2_1 = current_speed - speed_difference_to_nveh_l2_1;
+	speed_of_nveh_r2_1 = current_speed - speed_difference_to_nveh_r2_1;
+}
+
+bool is_now_in_meter_zone() {
+	for (int a = 0; a < sizeof(meter_link) / sizeof(meter_link[0]); a = a + 1) {
+		if (current_link == meter_link[a]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+double find_min_net_distance() {
+	double all_net_distance[] = {net_distance_to_nveh_0_1,net_distance_to_nveh_l1_1,net_distance_to_nveh_r1_1,net_distance_to_nveh_l2_1,net_distance_to_nveh_r2_1};
+	double smallest = all_net_distance[0];
+	for (int a = 0; a < sizeof(all_net_distance) / sizeof(all_net_distance[0]); a = a + 1) {
+		smallest = std::min(smallest, all_net_distance[a]);
+	}
+	return smallest;
 }
 /*==========================================================================*/
 /*  End of DriverModel.cpp                                                  */
