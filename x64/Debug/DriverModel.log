@@ -1,0 +1,5 @@
+﻿  DriverModel.cpp
+c:\users\liming jiang\desktop\nem2.0\drivermodel.cpp(25): warning C4244: 'initializing': conversion from 'double' to 'long', possible loss of data
+c:\users\liming jiang\desktop\nem2.0\drivermodel.cpp(373): warning C4144: '<': relational expression as switch expression
+c:\users\liming jiang\desktop\nem2.0\drivermodel.cpp(380): warning C4715: 'get_driving_mode_at_meter_zone': not all control paths return a value
+  DriverModel.vcxproj -> C:\Users\Liming Jiang\Desktop\NEM2.0\x64\Debug\DriverModel.dll

@@ -1,0 +1,4 @@
+﻿  DriverModel.cpp
+c:\users\liming jiang\desktop\urban corridor_university ave\vistro_to_vissim\10.7_100cacc_new\drivermodel.cpp(361): warning C4715: 'GetControlMode': not all control paths return a value
+     Creating library C:\Users\Liming Jiang\Desktop\Urban corridor_university ave\vistro_to_vissim\10.7_100CACC_new\Lib\Debug\DriverModel.lib and object C:\Users\Liming Jiang\Desktop\Urban corridor_university ave\vistro_to_vissim\10.7_100CACC_new\Lib\Debug\DriverModel.exp
+  DriverModel.vcxproj -> C:\Users\Liming Jiang\Desktop\Urban corridor_university ave\vistro_to_vissim\10.7_100CACC_new\Bin\Debug\DriverModel.dll
