@@ -14,7 +14,7 @@
 #include <algorithm>
 using namespace std;
 /*==========================================================================*/
-long meter_link [] = {21,22,30,52,53,61,83,84,92};
+long meter_link [] = {114,115,123};
 long current_link = 0;
 long current_lane = 0;
 long vehicle_id = 111;
